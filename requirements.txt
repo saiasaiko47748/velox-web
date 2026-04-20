@@ -1,4 +1,6 @@
-flask==3.0.0
-flask-socketio==5.3.6
-razorpay==1.4.1
-twilio==8.10.0
+flask
+flask-socketio
+razorpay
+flask-cors
+eventlet
+gunicorn
