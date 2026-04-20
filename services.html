@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}All Services — VELOX{% endblock %}
+
+{% block extra_head %}
+<style>
+.services-page { padding-top: 72px; min-height: 100vh; background: var(--bg); }
+.services-hero {
+  background: linear-gradient(135deg, #111111, #1A1A1A);
+  border-bottom: 1px solid var(--border);
+  padding: 56px 0 40px;
+}
+.all-services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px; padding: 56px 0;
+}
+.svc-big-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 24px; padding: 32px;
+  text-decoration: none; display: block;
+  transition: all .4s; position: relative; overflow: hidden;
+}
+.svc-big-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-8px);
+  box-shadow: 0 24px 60px rgba(201,168,76,0.12);
+}
+.svc-big-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(201,168,76,0.06), transparent);
+  opacity: 0; transition: opacity .4s;
+}
+.svc-big-card:hover::before { opacity: 1; }
+.svc-icon {
+  width: 64px; height: 64px;
+  background: var(--bg); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  transition: all .3s; position: relative; z-index: 1;
+}
+.svc-big-card:hover .svc-icon { background: var(--gold); }
+.svc-icon i { color: var(--gold); font-size: 26px; transition: color .3s; }
+.svc-big-card:hover .svc-icon i { color: #0A0A0A; }
+.svc-big-card h3 { color: var(--text); font-size: 19px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; transition: color .3s; }
+.svc-big-card:hover h3 { color: var(--gold); }
+.svc-big-card p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 16px; position: relative; z-index: 1; }
+.svc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; position: relative; z-index: 1; }
+.svc-tag {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 10px;
+  font-size: 11px; color: var(--muted);
+}
+.svc-price-row { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+.svc-price { color: var(--gold); font-weight: 700; font-size: 16px; }
+.svc-book-btn {
+  background: transparent; border: 1px solid var(--gold);
+  color: var(--gold); padding: 8px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .3s;
+}
+.svc-big-card:hover .svc-book-btn { background: var(--gold); color: #0A0A0A; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="services-page">
+  <div class="services-hero">
+    <div class="container">
+      <span class="section-label">All Services</span>
+      <h1 class="section-title" style="font-size:44px;">Premium Services<br><span class="text-gold">For Every Need</span></h1>
+      <p style="color:var(--muted);font-size:15px;max-width:500px;">Choose from 20+ professional home services, all delivered by verified experts.</p>
+    </div>
+  </div>
+  <div class="container">
+    <div class="all-services-grid">
+      {% set services = [
+        ('fa-broom','Home Cleaning','Deep & thorough cleaning for your entire home','Deep Cleaning,Regular,Move-in/out,Office',299),
+        ('fa-faucet-drip','Plumbing','Expert solutions for all plumbing issues','Leak Repair,Installation,Unblocking,Bathroom',399),
+        ('fa-bolt','Electrical','Certified electricians for all electrical work','Wiring,Fixtures,Circuit,Fan Installation',449),
+        ('fa-spa','Beauty & Spa','Professional beauty services at your doorstep','Haircut,Facial,Massage,Manicure,Waxing',599),
+        ('fa-bug-slash','Pest Control','Safe and effective pest elimination','Termite,Cockroach,Rodent,Mosquito,Bed Bugs',799),
+        ('fa-screwdriver-wrench','Appliance Repair','Expert repairs for all home appliances','AC,Washing Machine,Fridge,Microwave,TV',349),
+        ('fa-hammer','Carpentry','Skilled carpenters for all woodwork needs','Furniture,Doors,Windows,Custom Work',499),
+        ('fa-paint-roller','Painting','Transform your space with professional painters','Interior,Exterior,Texture,Waterproofing',999),
+        ('fa-snowflake','AC Service','Complete AC installation and servicing','Service,Repair,Installation,Gas Refill',599),
+        ('fa-shirt','Laundry','Professional laundry and dry cleaning','Wash & Fold,Dry Clean,Steam Press,Pickup',199),
+        ('fa-water','Water Purifier','RO and water purifier service and repair','Service,Repair,Installation,AMC',349),
+        ('fa-sofa','Sofa Cleaning','Deep cleaning for sofas and upholstery','Sofa,Carpet,Mattress,Curtains',499),
+      ] %}
+      {% for icon, name, desc, tags, price in services %}
+      <a href="/book?service={{ name | urlencode }}" class="svc-big-card">
+        <div class="svc-icon"><i class="fa-solid {{ icon }}"></i></div>
+        <h3>{{ name }}</h3>
+        <p>{{ desc }}</p>
+        <div class="svc-tags">
+          {% for tag in tags.split(',') %}
+          <span class="svc-tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        <div class="svc-price-row">
+          <span class="svc-price">From ₹{{ price }}</span>
+          <button class="svc-book-btn">Book Now</button>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

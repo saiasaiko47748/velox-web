@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% block title %}Book a Service — VELOX{% endblock %}
+
+{% block extra_head %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+.book-page { padding-top: 72px; min-height: 100vh; background: var(--bg); }
+.book-hero {
+  background: linear-gradient(135deg, #111111, #1A1A1A);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 0 32px;
+}
+.book-grid {
+  display: grid; grid-template-columns: 1fr 380px;
+  gap: 32px; margin-top: 40px; padding-bottom: 80px;
+}
+@media (max-width: 900px) { .book-grid { grid-template-columns: 1fr; } }
+
+.form-section { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 36px; }
+.form-section h3 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; color: var(--muted); font-size: 13px; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; color: var(--text);
+  font-family: 'DM Sans'; font-size: 14px;
+  outline: none; transition: border-color .3s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group select option { background: #1A1A1A; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+.location-group { position: relative; }
+.gps-inline {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--gold);
+  cursor: pointer; font-size: 16px; transition: color .3s;
+}
+.gps-inline:hover { color: var(--gold-light); }
+
+/* Service selector */
+.service-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.service-opt {
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 12px; cursor: pointer; text-align: center;
+  transition: all .3s; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.service-opt:hover { border-color: var(--gold); }
+.service-opt.selected { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+.service-opt i { font-size: 20px; color: var(--gold); }
+.service-opt span { font-size: 12px; color: var(--text); font-weight: 500; }
+.service-opt .price { font-size: 11px; color: var(--muted); }
+
+/* Order Summary */
+.order-summary {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px;
+  position: sticky; top: 90px;
+}
+.order-summary h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.summary-row span { color: var(--muted); font-size: 13px; }
+.summary-row strong { color: var(--text); font-size: 13px; }
+.summary-total { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 16px; }
+.summary-total .summary-row span { color: var(--text); font-weight: 700; font-size: 15px; }
+.summary-total .summary-row strong { color: var(--gold); font-size: 20px; font-weight: 700; }
+.pay-btn {
+  width: 100%; background: var(--gold); color: #0A0A0A;
+  border: none; border-radius: 14px; padding: 16px;
+  font-family: 'DM Sans'; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all .3s; margin-top: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.pay-btn:hover { background: var(--gold-light); transform: translateY(-2px); }
+.pay-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.security-note {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--muted); font-size: 11px; margin-top: 12px;
+  justify-content: center;
+}
+.security-note i { color: var(--gold); }
+.payment-icons { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.payment-icon-chip {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px;
+  font-size: 11px; color: var(--muted);
+}
+
+/* Success Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--gold);
+  border-radius: 24px; padding: 48px 40px;
+  text-align: center; max-width: 420px; width: 90%;
+  animation: modalIn .4s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+.modal-icon {
+  width: 80px; height: 80px;
+  background: rgba(34,197,94,0.1); border: 2px solid #22c55e;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px; font-size: 36px; color: #22c55e;
+}
+.modal h2 { color: var(--text); font-size: 26px; margin-bottom: 12px; }
+.modal p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+.modal-payment-id { color: var(--gold); font-size: 12px; font-family: monospace; background: var(--bg); padding: 8px 16px; border-radius: 8px; display: inline-block; margin: 12px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="book-page">
+  <div class="book-hero">
+    <div class="container">
+      <span class="section-label">Book a Service</span>
+      <h1 class="section-title" style="font-size:40px;">Schedule Your <span class="text-gold">Elite Service</span></h1>
+      <p style="color:var(--muted);font-size:15px;">Fill in the details below and a verified professional will be at your door.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="book-grid">
+      <!-- FORM -->
+      <div>
+        <!-- Service Selection -->
+        <div class="form-section" style="margin-bottom:24px;">
+          <h3><i class="fa-solid fa-grid-2" style="color:var(--gold);margin-right:10px;"></i>Select Service</h3>
+          <div class="service-selector" id="serviceSelector">
+            <div class="service-opt" data-service="Home Cleaning" data-price="299" onclick="selectService(this)">
+              <i class="fa-solid fa-broom"></i><span>Home Cleaning</span><span class="price">From ₹299</span>
+            </div>
+            <div class="service-opt" data-service="Plumbing" data-price="399" onclick="selectService(this)">
+              <i class="fa-solid fa-faucet-drip"></i><span>Plumbing</span><span class="price">From ₹399</span>
+            </div>
+            <div class="service-opt" data-service="Electrical" data-price="449" onclick="selectService(this)">
+              <i class="fa-solid fa-bolt"></i><span>Electrical</span><span class="price">From ₹449</span>
+            </div>
+            <div class="service-opt" data-service="Beauty & Spa" data-price="599" onclick="selectService(this)">
+              <i class="fa-solid fa-spa"></i><span>Beauty & Spa</span><span class="price">From ₹599</span>
+            </div>
+            <div class="service-opt" data-service="Pest Control" data-price="799" onclick="selectService(this)">
+              <i class="fa-solid fa-bug-slash"></i><span>Pest Control</span><span class="price">From ₹799</span>
+            </div>
+            <div class="service-opt" data-service="Appliance Repair" data-price="349" onclick="selectService(this)">
+              <i class="fa-solid fa-screwdriver-wrench"></i><span>Appliance Repair</span><span class="price">From ₹349</span>
+            </div>
+            <div class="service-opt" data-service="Carpentry" data-price="499" onclick="selectService(this)">
+              <i class="fa-solid fa-hammer"></i><span>Carpentry</span><span class="price">From ₹499</span>
+            </div>
+            <div class="service-opt" data-service="Painting" data-price="999" onclick="selectService(this)">
+              <i class="fa-solid fa-paint-roller"></i><span>Painting</span><span class="price">From ₹999</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Details -->
+        <div class="form-section" style="margin-bottom:24px;">
+          <h3><i class="fa-solid fa-user" style="color:var(--gold);margin-right:10px;"></i>Your Details</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="custName" placeholder="Rahul Sharma">
+            </div>
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="tel" id="custPhone" placeholder="+91 9876543210">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="custEmail" placeholder="rahul@example.com">
+          </div>
+        </div>
+
+        <!-- Location & Schedule -->
+        <div class="form-section">
+          <h3><i class="fa-solid fa-location-dot" style="color:var(--gold);margin-right:10px;"></i>Location & Schedule</h3>
+          <div class="form-group location-group">
+            <label>Service Address *</label>
+            <input type="text" id="custLocation" placeholder="Enter full address with landmark">
+            <button class="gps-inline" onclick="detectLocation()" title="Use GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date *</label>
+              <input type="date" id="custDate" min="">
+            </div>
+            <div class="form-group">
+              <label>Time Slot *</label>
+              <select id="custTime">
+                <option value="">Select time</option>
+                <option>08:00 AM - 10:00 AM</option>
+                <option>10:00 AM - 12:00 PM</option>
+                <option>12:00 PM - 02:00 PM</option>
+                <option>02:00 PM - 04:00 PM</option>
+                <option>04:00 PM - 06:00 PM</option>
+                <option>06:00 PM - 08:00 PM</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Special Instructions (optional)</label>
+            <textarea id="custNotes" rows="3" placeholder="Any special requirements or notes for the professional..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDER SUMMARY -->
+      <div>
+        <div class="order-summary">
+          <h3>Order Summary</h3>
+          <div class="summary-row">
+            <span>Service</span>
+            <strong id="sumService">Not selected</strong>
+          </div>
+          <div class="summary-row">
+            <span>Base Price</span>
+            <strong id="sumBase">₹0</strong>
+          </div>
+          <div class="summary-row">
+            <span>Platform Fee</span>
+            <strong>₹29</strong>
+          </div>
+          <div class="summary-row">
+            <span>GST (18%)</span>
+            <strong id="sumGst">₹0</strong>
+          </div>
+          <div class="summary-total">
+            <div class="summary-row">
+              <span>Total Amount</span>
+              <strong id="sumTotal">₹0</strong>
+            </div>
+          </div>
+          <button class="pay-btn" id="payBtn" onclick="initiatePayment()" disabled>
+            <i class="fa-solid fa-lock"></i> Pay Securely
+          </button>
+          <div class="security-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            256-bit SSL Encrypted · Pay after service
+          </div>
+          <div class="payment-icons">
+            <span class="payment-icon-chip">UPI</span>
+            <span class="payment-icon-chip">Cards</span>
+            <span class="payment-icon-chip">Net Banking</span>
+            <span class="payment-icon-chip">Wallets</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-icon"><i class="fa-solid fa-check"></i></div>
+    <h2>Booking Confirmed!</h2>
+    <p>Your service has been booked successfully. A verified professional will be assigned shortly.</p>
+    <div class="modal-payment-id" id="paymentIdDisplay"></div>
+    <p style="margin-top:8px;">A confirmation email has been sent.</p>
+    <a id="trackNowBtn" href="/track-order" class="btn-gold" style="margin-top:16px;display:inline-flex;">Track Order <i class="fa-solid fa-location-dot"></i></a>
+    <a href="/" class="btn-outline" style="margin-top:10px;display:inline-flex;">Back to Home</a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const RAZORPAY_KEY = '{{ razorpay_key }}';
+let selectedService = '{{ selected_service }}';
+let selectedPrice = 0;
+
+// Pre-select if coming from service link
+window.onload = function() {
+  // Set min date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('custDate').min = today;
+  document.getElementById('custDate').value = today;
+
+  if (selectedService) {
+    const opts = document.querySelectorAll('.service-opt');
+    opts.forEach(o => {
+      if (o.dataset.service === selectedService) {
+        o.click();
+      }
+    });
+  }
+};
+
+function selectService(el) {
+  document.querySelectorAll('.service-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedService = el.dataset.service;
+  selectedPrice = parseInt(el.dataset.price);
+  updateSummary();
+}
+
+function updateSummary() {
+  const gst = Math.round(selectedPrice * 0.18);
+  const total = selectedPrice + 29 + gst;
+  document.getElementById('sumService').textContent = selectedService || 'Not selected';
+  document.getElementById('sumBase').textContent = '₹' + selectedPrice;
+  document.getElementById('sumGst').textContent = '₹' + gst;
+  document.getElementById('sumTotal').textContent = '₹' + total;
+  document.getElementById('payBtn').disabled = !selectedService;
+}
+
+function detectLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+        const data = await res.json();
+        const addr = data.address;
+        const loc = [addr.road, addr.house_number, addr.suburb, addr.city || addr.town, addr.state].filter(Boolean).join(', ');
+        document.getElementById('custLocation').value = loc;
+        showToast('📍 Location detected!');
+      } catch {
+        document.getElementById('custLocation').value = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+      }
+    });
+  }
+}
+
+async function initiatePayment() {
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const location = document.getElementById('custLocation').value.trim();
+  const date = document.getElementById('custDate').value;
+  const time = document.getElementById('custTime').value;
+
+  if (!name || !phone || !email || !location || !date || !time) {
+    showToast('Please fill all required fields!', 'error'); return;
+  }
+  if (!selectedService) {
+    showToast('Please select a service!', 'error'); return;
+  }
+
+  const gst = Math.round(selectedPrice * 0.18);
+  const total = selectedPrice + 29 + gst;
+
+  document.getElementById('payBtn').disabled = true;
+  document.getElementById('payBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+  try {
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: total, service: selectedService, name, phone, location })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: total * 100,
+      currency: 'INR',
+      name: 'VELOX',
+      description: selectedService,
+      order_id: data.order.id,
+      prefill: { name, email, contact: phone },
+      theme: { color: '#C9A84C' },
+      handler: async function(response) {
+        const verRes = await fetch('/api/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...response,
+            customer_name: name,
+            customer_email: email,
+            customer_phone: phone,
+            service: selectedService,
+            location,
+            datetime: date + ' ' + time,
+            amount: total
+          })
+        });
+        const verData = await verRes.json();
+        if (verData.success) {
+          const ref = verData.booking_ref || '';
+          document.getElementById('paymentIdDisplay').textContent = 'Booking Ref: ' + ref;
+          if (ref) {
+            document.getElementById('trackNowBtn').href = '/track-order?ref=' + ref;
+          }
+          document.getElementById('successModal').classList.add('show');
+        } else {
+          showToast('Payment verification failed. Contact support.', 'error');
+        }
+        resetPayBtn();
+      },
+      modal: { ondismiss: function() { resetPayBtn(); } }
+    };
+    new Razorpay(options).open();
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+    resetPayBtn();
+  }
+}
+
+function resetPayBtn() {
+  document.getElementById('payBtn').disabled = false;
+  document.getElementById('payBtn').innerHTML = '<i class="fa-solid fa-lock"></i> Pay Securely';
+}
+</script>
+{% endblock %}

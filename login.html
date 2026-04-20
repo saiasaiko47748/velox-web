@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Login — VELOX{% endblock %}
+
+{% block extra_head %}
+<style>
+.login-page {
+  padding-top: 72px; min-height: 100vh; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 24px; padding: 48px 40px;
+  width: 100%; max-width: 440px;
+  animation: fadeUp .5s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.login-logo {
+  text-align: center; margin-bottom: 32px;
+}
+.login-logo h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 700;
+  color: var(--gold); letter-spacing: 5px;
+}
+.login-logo p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.step { display: none; }
+.step.active { display: block; animation: fadeUp .4s ease; }
+.step-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.step-sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.form-group input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; color: var(--text);
+  font-family: 'DM Sans'; font-size: 15px;
+  outline: none; transition: border-color .3s;
+}
+.form-group input:focus { border-color: var(--gold); }
+.login-btn {
+  width: 100%; background: var(--gold); color: #0A0A0A;
+  border: none; border-radius: 12px; padding: 15px;
+  font-family: 'DM Sans'; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all .3s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.login-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+.login-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.otp-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; margin-bottom: 24px; }
+.otp-cell {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 0;
+  color: var(--text); font-size: 22px; font-weight: 700;
+  text-align: center; outline: none;
+  transition: border-color .3s; width: 100%;
+  font-family: monospace;
+}
+.otp-cell:focus { border-color: var(--gold); }
+.resend-row { text-align: center; margin-top: 16px; }
+.resend-row span { color: var(--muted); font-size: 13px; }
+.resend-btn { background: none; border: none; color: var(--gold); font-size: 13px; cursor: pointer; font-weight: 600; }
+.resend-btn:disabled { color: var(--muted); cursor: not-allowed; }
+.name-step-note { background: rgba(201,168,76,0.06); border: 1px solid rgba(201,168,76,0.2); border-radius: 10px; padding: 12px 16px; color: var(--gold-light); font-size: 13px; margin-bottom: 20px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.back-link { text-align: center; margin-top: 20px; }
+.back-link a { color: var(--muted); font-size: 13px; text-decoration: none; transition: color .3s; }
+.back-link a:hover { color: var(--gold); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <h2>VELOX</h2>
+      <p>Sign in to track & manage your bookings</p>
+    </div>
+
+    <!-- Step 1: Phone + Email -->
+    <div class="step active" id="step1">
+      <div class="step-title">Enter Your Details</div>
+      <div class="step-sub">We'll send a one-time password to your email to verify your identity.</div>
+      <div class="form-group">
+        <label>Phone Number *</label>
+        <input type="tel" id="loginPhone" placeholder="+91 9876543210" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <button class="login-btn" id="sendOtpBtn" onclick="sendOtp()">
+        <i class="fa-solid fa-envelope"></i> Send OTP
+      </button>
+      <div class="back-link" style="margin-top:20px;">
+        <a href="/">← Back to Home</a>
+      </div>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div class="step" id="step2">
+      <div class="step-title">Enter OTP</div>
+      <div class="step-sub" id="otpSubText">A 6-digit OTP has been sent to your email.</div>
+      <div class="otp-grid" id="otpGrid">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,0)">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,1)">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,2)">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,3)">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,4)">
+        <input class="otp-cell" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" onkeyup="otpNav(this,5)">
+      </div>
+      <button class="login-btn" id="verifyBtn" onclick="verifyOtp()">
+        <i class="fa-solid fa-shield-halved"></i> Verify & Login
+      </button>
+      <div class="resend-row">
+        <span>Didn't receive it? </span>
+        <button class="resend-btn" id="resendBtn" onclick="resendOtp()">Resend OTP</button>
+        <span id="resendTimer"></span>
+      </div>
+      <div class="back-link">
+        <a href="#" onclick="goStep(1)">← Change Details</a>
+      </div>
+    </div>
+
+    <!-- Step 3: Name (first time) -->
+    <div class="step" id="step3">
+      <div class="step-title">Welcome to VELOX!</div>
+      <div class="step-sub">Looks like you're new here. Please tell us your name to complete setup.</div>
+      <div class="name-step-note"><i class="fa-solid fa-circle-info"></i> You only need to do this once.</div>
+      <div class="form-group">
+        <label>Your Full Name *</label>
+        <input type="text" id="newName" placeholder="Rahul Sharma">
+      </div>
+      <button class="login-btn" onclick="saveName()">
+        <i class="fa-solid fa-arrow-right"></i> Continue
+      </button>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let resendInterval;
+let resendSeconds = 60;
+let enteredPhone = '';
+let enteredEmail = '';
+
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+}
+
+async function sendOtp() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!phone || !email) { showToast('Phone and email are required', 'error'); return; }
+  if (!email.includes('@')) { showToast('Enter a valid email address', 'error'); return; }
+
+  enteredPhone = phone;
+  enteredEmail = email;
+
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+
+  const res  = await fetch('/api/send-otp', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ phone, email })
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-envelope"></i> Send OTP';
+
+  if (data.success) {
+    document.getElementById('otpSubText').textContent =
+      `A 6-digit OTP has been sent to ${email}. Check your inbox.`;
+    goStep(2);
+    document.querySelector('.otp-cell').focus();
+    startResendTimer();
+    showToast('✅ OTP sent to your email!');
+  } else {
+    showToast(data.error || 'Failed to send OTP', 'error');
+  }
+}
+
+function otpNav(el, idx) {
+  const cells = document.querySelectorAll('.otp-cell');
+  if (el.value && idx < 5) cells[idx + 1].focus();
+  if (el.value.length === 0 && idx > 0 && event.key === 'Backspace') cells[idx - 1].focus();
+  // Auto-verify when all filled
+  const otp = Array.from(cells).map(c => c.value).join('');
+  if (otp.length === 6) verifyOtp();
+}
+
+async function verifyOtp() {
+  const cells = document.querySelectorAll('.otp-cell');
+  const otp   = Array.from(cells).map(c => c.value).join('');
+  if (otp.length !== 6) { showToast('Please enter the full 6-digit OTP', 'error'); return; }
+
+  const btn = document.getElementById('verifyBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+  const res  = await fetch('/api/verify-otp', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ phone: enteredPhone, otp })
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Verify & Login';
+
+  if (data.success) {
+    if (!data.name || data.name === 'Customer') {
+      goStep(3);
+    } else {
+      showToast('✅ Welcome back, ' + data.name + '!');
+      setTimeout(() => window.location.href = '/my-orders', 1000);
+    }
+  } else {
+    showToast(data.error || 'Verification failed', 'error');
+    cells.forEach(c => { c.value = ''; });
+    cells[0].focus();
+  }
+}
+
+async function saveName() {
+  const name = document.getElementById('newName').value.trim();
+  if (!name) { showToast('Please enter your name', 'error'); return; }
+  await fetch('/api/update-name', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ name })
+  });
+  showToast('✅ Welcome to VELOX, ' + name + '!');
+  setTimeout(() => window.location.href = '/my-orders', 1000);
+}
+
+async function resendOtp() {
+  const btn = document.getElementById('resendBtn');
+  btn.disabled = true;
+  const res  = await fetch('/api/send-otp', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ phone: enteredPhone, email: enteredEmail })
+  });
+  const data = await res.json();
+  if (data.success) { showToast('✅ OTP resent!'); startResendTimer(); }
+  else { showToast('Failed to resend OTP', 'error'); btn.disabled = false; }
+}
+
+function startResendTimer() {
+  clearInterval(resendInterval);
+  resendSeconds = 60;
+  document.getElementById('resendBtn').disabled = true;
+  document.getElementById('resendTimer').textContent = ` (${resendSeconds}s)`;
+  resendInterval = setInterval(() => {
+    resendSeconds--;
+    document.getElementById('resendTimer').textContent = ` (${resendSeconds}s)`;
+    if (resendSeconds <= 0) {
+      clearInterval(resendInterval);
+      document.getElementById('resendBtn').disabled = false;
+      document.getElementById('resendTimer').textContent = '';
+    }
+  }, 1000);
+}
+</script>
+{% endblock %}

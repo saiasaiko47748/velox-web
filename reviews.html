@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}Customer Reviews — VELOX{% endblock %}
+
+{% block extra_head %}
+<style>
+.reviews-page { padding-top: 72px; background: var(--bg); min-height: 100vh; }
+.reviews-hero {
+  background: linear-gradient(135deg, #111111, #1A1A1A);
+  border-bottom: 1px solid var(--border);
+  padding: 56px 0 40px;
+}
+.reviews-layout {
+  display: grid; grid-template-columns: 1fr 380px;
+  gap: 40px; padding: 56px 0;
+}
+@media (max-width: 900px) { .reviews-layout { grid-template-columns: 1fr; } }
+
+.review-list { display: flex; flex-direction: column; gap: 20px; }
+.review-card-full {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px;
+  transition: border-color .3s;
+}
+.review-card-full:hover { border-color: var(--gold); }
+.rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.rc-reviewer { display: flex; align-items: center; gap: 12px; }
+.rc-avatar {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #0A0A0A;
+}
+.rc-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.rc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.rc-stars { color: var(--gold); font-size: 16px; }
+.rc-service {
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2);
+  color: var(--gold); font-size: 11px; font-weight: 600;
+  padding: 4px 12px; border-radius: 999px;
+}
+.rc-text { color: var(--muted); font-size: 14px; line-height: 1.7; font-style: italic; }
+.rc-verified {
+  display: flex; align-items: center; gap: 6px;
+  color: #22c55e; font-size: 11px; margin-top: 12px;
+}
+
+/* Rating Summary */
+.rating-summary {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px; margin-bottom: 20px;
+  text-align: center;
+}
+.big-rating { font-size: 64px; font-weight: 700; color: var(--gold); font-family: 'Cormorant Garamond', serif; line-height: 1; }
+.rating-stars { color: var(--gold); font-size: 20px; margin: 8px 0; }
+.rating-count { color: var(--muted); font-size: 13px; }
+.rating-bars { margin-top: 20px; }
+.rating-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rating-bar-label { color: var(--muted); font-size: 12px; width: 12px; text-align: right; }
+.rating-bar-track { flex: 1; background: var(--border); border-radius: 999px; height: 6px; overflow: hidden; }
+.rating-bar-fill { height: 100%; background: var(--gold); border-radius: 999px; }
+.rating-bar-count { color: var(--muted); font-size: 12px; width: 30px; }
+
+/* Review Form */
+.review-form {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px;
+}
+.review-form h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.star-selector { display: flex; gap: 8px; margin-bottom: 20px; }
+.star-btn {
+  font-size: 28px; cursor: pointer;
+  color: var(--border); transition: color .2s;
+  background: none; border: none;
+}
+.star-btn.active { color: var(--gold); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; color: var(--text);
+  font-family: 'DM Sans'; font-size: 14px;
+  outline: none; transition: border-color .3s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group select option { background: #1A1A1A; }
+.submit-review-btn {
+  width: 100%; background: var(--gold); color: #0A0A0A;
+  border: none; border-radius: 12px; padding: 14px;
+  font-family: 'DM Sans'; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all .3s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.submit-review-btn:hover { background: var(--gold-light); }
+.submit-review-btn:disabled { opacity: .5; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reviews-page">
+  <div class="reviews-hero">
+    <div class="container">
+      <span class="section-label">Customer Reviews</span>
+      <h1 class="section-title" style="font-size:40px;">What Our <span class="text-gold">Clients Say</span></h1>
+      <p style="color:var(--muted);font-size:15px;">Real experiences from real customers — 12,000+ verified reviews</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="reviews-layout">
+      <!-- Reviews List -->
+      <div>
+        <div class="review-list">
+          <div class="review-card-full">
+            <div class="rc-top">
+              <div class="rc-reviewer">
+                <div class="rc-avatar">P</div>
+                <div><div class="rc-name">Priya Sharma</div><div class="rc-meta">Mumbai · March 2026</div></div>
+              </div>
+              <div>
+                <div class="rc-stars">★★★★★</div>
+                <span class="rc-service">Home Cleaning</span>
+              </div>
+            </div>
+            <p class="rc-text">"Absolutely outstanding! The team was punctual, professional and thorough. They cleaned every corner. My apartment has never looked this pristine. Will definitely book again!"</p>
+            <div class="rc-verified"><i class="fa-solid fa-circle-check"></i> Verified Booking</div>
+          </div>
+
+          <div class="review-card-full">
+            <div class="rc-top">
+              <div class="rc-reviewer">
+                <div class="rc-avatar" style="background:linear-gradient(135deg,#6366f1,#818cf8);">A</div>
+                <div><div class="rc-name">Arjun Mehta</div><div class="rc-meta">Delhi · March 2026</div></div>
+              </div>
+              <div>
+                <div class="rc-stars">★★★★★</div>
+                <span class="rc-service">Electrical</span>
+              </div>
+            </div>
+            <p class="rc-text">"The live tracking was absolutely brilliant. I could see exactly when Ravi was arriving. He fixed all the wiring issues in under 2 hours. Premium quality service!"</p>
+            <div class="rc-verified"><i class="fa-solid fa-circle-check"></i> Verified Booking</div>
+          </div>
+
+          <div class="review-card-full">
+            <div class="rc-top">
+              <div class="rc-reviewer">
+                <div class="rc-avatar" style="background:linear-gradient(135deg,#ec4899,#f9a8d4);">S</div>
+                <div><div class="rc-name">Sneha Krishnan</div><div class="rc-meta">Bangalore · February 2026</div></div>
+              </div>
+              <div>
+                <div class="rc-stars">★★★★★</div>
+                <span class="rc-service">Beauty & Spa</span>
+              </div>
+            </div>
+            <p class="rc-text">"VELOX is a total game changer. Beauty at home saved me hours. The beautician was so skilled, the products were high-end, and the whole experience felt like a luxury spa."</p>
+            <div class="rc-verified"><i class="fa-solid fa-circle-check"></i> Verified Booking</div>
+          </div>
+
+          <div class="review-card-full">
+            <div class="rc-top">
+              <div class="rc-reviewer">
+                <div class="rc-avatar" style="background:linear-gradient(135deg,#10b981,#6ee7b7);">R</div>
+                <div><div class="rc-name">Rohan Gupta</div><div class="rc-meta">Pune · February 2026</div></div>
+              </div>
+              <div>
+                <div class="rc-stars">★★★★☆</div>
+                <span class="rc-service">Plumbing</span>
+              </div>
+            </div>
+            <p class="rc-text">"Quick response, skilled plumber. Fixed a stubborn leak that two other plumbers couldn't solve. Only minor feedback: slightly delayed from the scheduled slot. But overall great!"</p>
+            <div class="rc-verified"><i class="fa-solid fa-circle-check"></i> Verified Booking</div>
+          </div>
+
+          <div class="review-card-full">
+            <div class="rc-top">
+              <div class="rc-reviewer">
+                <div class="rc-avatar" style="background:linear-gradient(135deg,#f59e0b,#fde68a);">N</div>
+                <div><div class="rc-name">Nisha Patel</div><div class="rc-meta">Chennai · January 2026</div></div>
+              </div>
+              <div>
+                <div class="rc-stars">★★★★★</div>
+                <span class="rc-service">Pest Control</span>
+              </div>
+            </div>
+            <p class="rc-text">"The pest control team was incredibly professional. They explained everything before starting, used eco-friendly products, and the results were immediate. Zero pests since then!"</p>
+            <div class="rc-verified"><i class="fa-solid fa-circle-check"></i> Verified Booking</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar: Rating + Form -->
+      <div>
+        <!-- Rating Summary -->
+        <div class="rating-summary">
+          <div class="big-rating">4.9</div>
+          <div class="rating-stars">★★★★★</div>
+          <div class="rating-count">Based on 12,483 reviews</div>
+          <div class="rating-bars">
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">5</span>
+              <div class="rating-bar-track"><div class="rating-bar-fill" style="width:88%"></div></div>
+              <span class="rating-bar-count">10,985</span>
+            </div>
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">4</span>
+              <div class="rating-bar-track"><div class="rating-bar-fill" style="width:9%;background:#E8D5A3"></div></div>
+              <span class="rating-bar-count">1,123</span>
+            </div>
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">3</span>
+              <div class="rating-bar-track"><div class="rating-bar-fill" style="width:2%;background:#A0A0A0"></div></div>
+              <span class="rating-bar-count">249</span>
+            </div>
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">2</span>
+              <div class="rating-bar-track"><div class="rating-bar-fill" style="width:1%;background:#666"></div></div>
+              <span class="rating-bar-count">87</span>
+            </div>
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">1</span>
+              <div class="rating-bar-track"><div class="rating-bar-fill" style="width:0.5%;background:#444"></div></div>
+              <span class="rating-bar-count">39</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Review Form -->
+        <div class="review-form">
+          <h3><i class="fa-solid fa-star" style="color:var(--gold);margin-right:8px;"></i>Leave a Review</h3>
+          <label style="display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Your Rating *</label>
+          <div class="star-selector" id="starSelector">
+            <button class="star-btn" data-val="1" onclick="setRating(1)">★</button>
+            <button class="star-btn" data-val="2" onclick="setRating(2)">★</button>
+            <button class="star-btn" data-val="3" onclick="setRating(3)">★</button>
+            <button class="star-btn" data-val="4" onclick="setRating(4)">★</button>
+            <button class="star-btn" data-val="5" onclick="setRating(5)">★</button>
+          </div>
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="revName" placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="revEmail" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="revCity" placeholder="Mumbai">
+          </div>
+          <div class="form-group">
+            <label>Service Used *</label>
+            <select id="revService">
+              <option value="">Select service</option>
+              <option>Home Cleaning</option>
+              <option>Plumbing</option>
+              <option>Electrical</option>
+              <option>Beauty & Spa</option>
+              <option>Pest Control</option>
+              <option>Appliance Repair</option>
+              <option>Carpentry</option>
+              <option>Painting</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Review *</label>
+            <textarea id="revText" rows="4" placeholder="Share your experience with us..."></textarea>
+          </div>
+          <button class="submit-review-btn" id="submitRevBtn" onclick="submitReview()">
+            <i class="fa-solid fa-paper-plane"></i> Submit Review
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedRating = 0;
+
+function setRating(val) {
+  selectedRating = val;
+  document.querySelectorAll('.star-btn').forEach((b, i) => {
+    b.classList.toggle('active', i < val);
+  });
+}
+
+async function submitReview() {
+  const name = document.getElementById('revName').value.trim();
+  const email = document.getElementById('revEmail').value.trim();
+  const city = document.getElementById('revCity').value.trim();
+  const service = document.getElementById('revService').value;
+  const review = document.getElementById('revText').value.trim();
+
+  if (!name || !service || !review || selectedRating === 0) {
+    showToast('Please fill all required fields and select a rating!', 'error'); return;
+  }
+
+  const btn = document.getElementById('submitRevBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+
+  try {
+    const res = await fetch('/api/submit-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, city, service, review, rating: selectedRating })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Thank you! Your review has been submitted.');
+      // Reset form
+      document.getElementById('revName').value = '';
+      document.getElementById('revEmail').value = '';
+      document.getElementById('revCity').value = '';
+      document.getElementById('revService').value = '';
+      document.getElementById('revText').value = '';
+      setRating(0);
+    } else {
+      showToast('Error submitting review. Please try again.', 'error');
+    }
+  } catch {
+    showToast('Something went wrong!', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Review';
+}
+</script>
+{% endblock %}

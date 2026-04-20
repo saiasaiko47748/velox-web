@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Track Your Order — VELOX{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+.track-page { padding-top: 72px; min-height: 100vh; background: var(--bg); }
+.track-hero {
+  background: linear-gradient(135deg, #111111, #1A1A1A);
+  border-bottom: 1px solid var(--border); padding: 56px 0 40px;
+}
+.track-layout {
+  max-width: 700px; margin: 0 auto; padding: 56px 24px;
+}
+.track-input-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 36px; margin-bottom: 32px;
+}
+.track-input-card h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
+.track-input-row { display: flex; gap: 12px; }
+.track-input-row input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  color: var(--text); font-family: 'DM Sans'; font-size: 14px; outline: none;
+  transition: border-color .3s;
+}
+.track-input-row input:focus { border-color: var(--gold); }
+.track-btn {
+  background: var(--gold); color: #0A0A0A; border: none;
+  border-radius: 12px; padding: 14px 24px;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: all .3s; white-space: nowrap;
+}
+.track-btn:hover { background: var(--gold-light); }
+
+/* Tracking Timeline */
+.order-status-card {
+  background: var(--card); border: 1px solid var(--gold);
+  border-radius: 20px; padding: 32px; display: none;
+}
+.order-status-card.show { display: block; animation: fadeUp .5s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.os-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.os-id { font-size: 12px; color: var(--muted); }
+.os-id strong { color: var(--gold); font-family: monospace; }
+.status-badge {
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+  color: #22c55e; border-radius: 999px; padding: 6px 16px;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.status-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.status-badge.pending-status { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: #818cf8; }
+.status-badge.pending-status .status-dot { background: #818cf8; }
+.status-badge.in-prog { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+.status-badge.in-prog .status-dot { background: #f59e0b; }
+
+/* Timeline */
+.timeline { margin: 24px 0; }
+.tl-item { display: flex; gap: 16px; margin-bottom: 24px; position: relative; }
+.tl-left { display: flex; flex-direction: column; align-items: center; }
+.tl-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.tl-icon.done { background: rgba(34,197,94,0.15); border: 2px solid #22c55e; color: #22c55e; }
+.tl-icon.active { background: rgba(201,168,76,0.15); border: 2px solid var(--gold); color: var(--gold); }
+.tl-icon.pending { background: var(--bg); border: 2px solid var(--border); color: var(--muted); }
+.tl-line { width: 2px; flex: 1; background: var(--border); margin: 4px 0; min-height: 20px; }
+.tl-line.done { background: #22c55e; }
+.tl-line.active { background: linear-gradient(#22c55e, var(--gold)); }
+.tl-content { padding-top: 8px; }
+.tl-content h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.tl-content p { font-size: 12px; color: var(--muted); }
+
+/* Pro card */
+.pro-assign {
+  background: var(--bg); border-radius: 14px; padding: 20px;
+  display: flex; align-items: center; gap: 16px; margin-top: 20px;
+}
+.pro-avatar {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #0A0A0A;
+}
+.pro-details { flex: 1; }
+.pro-details h4 { color: var(--text); font-size: 15px; font-weight: 600; }
+.pro-details p { color: var(--muted); font-size: 12px; }
+.pro-cta { display: flex; gap: 8px; }
+.pro-cta-btn {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; font-size: 14px;
+}
+.call-btn { background: var(--gold); color: #0A0A0A; }
+.msg-btn { background: var(--border); color: var(--gold); }
+
+/* Live Location Panel */
+.live-location-panel {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; margin-top: 16px;
+  display: none;
+}
+.live-location-panel.active { display: block; }
+.live-location-panel h4 {
+  color: var(--gold); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.live-ping { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: blink 1s infinite; }
+.coords-display {
+  font-family: monospace; font-size: 13px; color: var(--text);
+  background: #0A0A0A; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px;
+}
+.maps-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--gold); color: #0A0A0A; border: none;
+  border-radius: 8px; padding: 10px 18px; font-weight: 700;
+  font-size: 13px; cursor: pointer; text-decoration: none;
+  transition: all .3s;
+}
+.maps-btn:hover { background: var(--gold-light); }
+
+/* Map preview */
+.map-preview {
+  background: var(--bg); border-radius: 14px;
+  height: 160px; margin-top: 16px; position: relative; overflow: hidden;
+}
+.map-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 30px 30px; opacity: 0.3;
+}
+.map-pulse {
+  position: absolute; top: 40%; left: 35%;
+  width: 16px; height: 16px;
+  background: var(--gold); border-radius: 50%;
+  transition: top 1s ease, left 1s ease;
+}
+.map-pulse::before {
+  content: ''; position: absolute; inset: -6px;
+  background: rgba(201,168,76,0.3); border-radius: 50%;
+  animation: ripple 1.5s infinite;
+}
+@keyframes ripple { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
+.eta-overlay {
+  position: absolute; top: 12px; right: 12px;
+  background: var(--card); border: 1px solid var(--gold);
+  border-radius: 10px; padding: 10px 16px; text-align: center;
+}
+.eta-overlay p { color: var(--muted); font-size: 10px; }
+.eta-overlay strong { color: var(--gold); font-size: 18px; font-weight: 700; }
+.no-location-msg {
+  text-align: center; padding: 20px;
+  color: var(--muted); font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="track-page">
+  <div class="track-hero">
+    <div class="container">
+      <span class="section-label">Live Tracking</span>
+      <h1 class="section-title" style="font-size:40px;">Track Your <span class="text-gold">Order</span></h1>
+      <p style="color:var(--muted);font-size:15px;">Enter your booking reference to track your service in real-time.</p>
+    </div>
+  </div>
+
+  <div class="track-layout">
+    {% if customer %}
+    <div style="margin-bottom:20px;padding:14px 18px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <span style="color:var(--muted);font-size:14px;"><i class="fa-solid fa-user" style="color:var(--gold);margin-right:8px;"></i>Logged in as <strong style="color:var(--text);">{{ customer.name or customer.phone }}</strong></span>
+      <a href="/my-orders" style="color:var(--gold);font-size:13px;text-decoration:none;font-weight:600;">View All Orders →</a>
+    </div>
+    {% endif %}
+
+    <div class="track-input-card">
+      <h3><i class="fa-solid fa-magnifying-glass" style="color:var(--gold);margin-right:8px;"></i>Find Your Booking</h3>
+      <div class="track-input-row">
+        <input type="text" id="trackInput" placeholder="Enter Booking Ref (e.g. VLX-2026-123456)">
+        <button class="track-btn" onclick="trackOrder()"><i class="fa-solid fa-location-dot"></i> Track</button>
+      </div>
+    </div>
+
+    <!-- Tracking Result -->
+    <div class="order-status-card" id="orderStatusCard">
+      <div class="os-header">
+        <div class="os-id">
+          <div style="color:var(--text);font-weight:700;font-size:16px;margin-bottom:4px;" id="displayService">Service</div>
+          <div>Booking ID: <strong id="displayBookingId">—</strong></div>
+          <div style="margin-top:4px;" id="displayDatetime"></div>
+        </div>
+        <div class="status-badge" id="statusBadge"><span class="status-dot"></span> <span id="statusText">Confirmed</span></div>
+      </div>
+
+      <!-- Live location panel (shown when pro shares GPS) -->
+      <div class="live-location-panel" id="livePanel">
+        <h4><span class="live-ping"></span> Live Location Received</h4>
+        <div class="coords-display" id="liveCoordsDisplay">Waiting for professional's location...</div>
+        <a id="openMapsBtn" href="#" target="_blank" class="maps-btn">
+          <i class="fa-solid fa-map-location-dot"></i> Open in Google Maps
+        </a>
+      </div>
+
+      <!-- Map preview (static) -->
+      <div class="map-preview" id="mapPreview">
+        <div class="map-grid"></div>
+        <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M 25 75 Q 40 60 50 50 T 75 25" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-dasharray="4 2"/>
+        </svg>
+        <div class="map-pulse" id="mapPulse"></div>
+        <div class="eta-overlay">
+          <p>Status</p>
+          <strong id="etaDisplay" style="font-size:13px;">Live</strong>
+        </div>
+        <div class="no-location-msg" id="noLocMsg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,10,10,0.7);">
+          <span><i class="fa-solid fa-satellite-dish" style="color:var(--gold);margin-right:6px;"></i>Waiting for professional to share location…</span>
+        </div>
+      </div>
+
+      <!-- Pro assigned -->
+      <div class="pro-assign" id="proAssignBlock">
+        <div class="pro-avatar" id="proAvatarLetter">P</div>
+        <div class="pro-details">
+          <h4 id="proNameDisplay">Awaiting Professional</h4>
+          <p>⭐ Verified VELOX Professional</p>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="timeline" style="margin-top:28px;" id="timeline">
+        <div class="tl-item">
+          <div class="tl-left">
+            <div class="tl-icon done"><i class="fa-solid fa-check"></i></div>
+            <div class="tl-line done"></div>
+          </div>
+          <div class="tl-content"><h4>Booking Confirmed</h4><p>Your booking is confirmed</p></div>
+        </div>
+        <div class="tl-item" id="tl-assigned">
+          <div class="tl-left">
+            <div class="tl-icon pending" id="tl-assigned-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="tl-line" id="tl-assigned-line"></div>
+          </div>
+          <div class="tl-content"><h4>Professional Assigned</h4><p id="tl-assigned-text">Assigning a professional…</p></div>
+        </div>
+        <div class="tl-item" id="tl-route">
+          <div class="tl-left">
+            <div class="tl-icon pending" id="tl-route-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="tl-line" id="tl-route-line"></div>
+          </div>
+          <div class="tl-content"><h4>Professional En Route</h4><p id="tl-route-text">Waiting for professional to depart</p></div>
+        </div>
+        <div class="tl-item" id="tl-progress">
+          <div class="tl-left">
+            <div class="tl-icon pending" id="tl-progress-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <div class="tl-line" id="tl-progress-line"></div>
+          </div>
+          <div class="tl-content"><h4>Service In Progress</h4><p id="tl-progress-text">Service will begin upon arrival</p></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-left">
+            <div class="tl-icon pending" id="tl-done-icon"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+          <div class="tl-content"><h4>Service Completed</h4><p>Awaiting completion</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const socket = io();
+let currentBookingRef = null;
+let liveLocationReceived = false;
+let lastLat = null, lastLng = null;
+
+// Auto-load from URL param
+window.onload = function() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (ref) {
+    document.getElementById('trackInput').value = ref;
+    trackOrder();
+  }
+};
+
+function trackOrder() {
+  const input = document.getElementById('trackInput').value.trim();
+  if (!input) { showToast('Please enter a Booking Reference', 'error'); return; }
+
+  // Leave old room
+  if (currentBookingRef) socket.emit('leave', { booking_ref: currentBookingRef });
+
+  fetch('/api/get-booking/' + encodeURIComponent(input))
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        showToast('Booking not found. Check the reference and try again.', 'error'); return;
+      }
+      const bk = data.booking;
+      currentBookingRef = bk.booking_ref;
+
+      // Populate UI
+      document.getElementById('displayService').textContent = bk.service;
+      document.getElementById('displayBookingId').textContent = bk.booking_ref;
+      document.getElementById('displayDatetime').textContent = bk.scheduled_dt || '';
+      if (bk.pro_name) {
+        document.getElementById('proNameDisplay').textContent = bk.pro_name;
+        document.getElementById('proAvatarLetter').textContent = bk.pro_name[0].toUpperCase();
+      }
+
+      applyStatus(bk.status);
+      document.getElementById('orderStatusCard').classList.add('show');
+      showToast('📍 Tracking your order live!');
+
+      // Join socket room for this booking
+      socket.emit('join_tracking', { booking_ref: bk.booking_ref });
+    })
+    .catch(() => showToast('Error fetching booking.', 'error'));
+}
+
+socket.on('location_update', function(data) {
+  if (data.booking_ref !== currentBookingRef) return;
+  const lat = data.lat;
+  const lng = data.lng;
+  lastLat = lat; lastLng = lng;
+  liveLocationReceived = true;
+
+  // Show live panel
+  document.getElementById('livePanel').classList.add('active');
+  document.getElementById('liveCoordsDisplay').textContent =
+    `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+  document.getElementById('openMapsBtn').href =
+    `https://www.google.com/maps?q=${lat},${lng}`;
+
+  // Hide waiting overlay on map
+  document.getElementById('noLocMsg').style.display = 'none';
+
+  // Animate dot on map (very simple proportional mapping)
+  const pulse = document.getElementById('mapPulse');
+  // Keep dot roughly centred with subtle variation
+  const px = 30 + (lng % 1) * 40;
+  const py = 30 + (lat % 1) * 40;
+  pulse.style.left = Math.min(Math.max(px, 10), 80) + '%';
+  pulse.style.top  = Math.min(Math.max(py, 10), 70) + '%';
+  document.getElementById('etaDisplay').textContent = '📡 Live';
+});
+
+socket.on('status_update', function(data) {
+  if (data.booking_ref !== currentBookingRef) return;
+  applyStatus(data.status);
+  const labels = {
+    en_route: 'Professional is on the way!',
+    in_progress: 'Service is in progress!',
+    completed: 'Your service is complete! 🎉'
+  };
+  if (labels[data.status]) showToast(labels[data.status]);
+});
+
+function applyStatus(status) {
+  const badge = document.getElementById('statusBadge');
+  const statusTextEl = document.getElementById('statusText');
+
+  badge.className = 'status-badge';
+  if (status === 'confirmed') {
+    statusTextEl.textContent = '📋 Confirmed';
+    badge.classList.add('pending-status');
+  } else if (status === 'en_route') {
+    statusTextEl.textContent = '🚗 Pro En Route';
+    // Mark timeline
+    setTlDone('tl-assigned');
+    setTlActive('tl-route');
+  } else if (status === 'in_progress') {
+    statusTextEl.textContent = '🔧 In Progress';
+    setTlDone('tl-assigned');
+    setTlDone('tl-route');
+    setTlActive('tl-progress');
+    badge.classList.add('in-prog');
+  } else if (status === 'completed') {
+    statusTextEl.textContent = '✅ Completed';
+    setTlDone('tl-assigned');
+    setTlDone('tl-route');
+    setTlDone('tl-progress');
+    document.getElementById('tl-done-icon').className = 'tl-icon done';
+    document.getElementById('tl-done-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
+  }
+}
+
+function setTlDone(id) {
+  const icon = document.getElementById(id + '-icon');
+  const line = document.getElementById(id + '-line');
+  if (icon) { icon.className = 'tl-icon done'; icon.innerHTML = '<i class="fa-solid fa-check"></i>'; }
+  if (line) { line.className = 'tl-line done'; }
+}
+function setTlActive(id) {
+  const icon = document.getElementById(id + '-icon');
+  if (icon) icon.className = 'tl-icon active';
+}
+</script>
+{% endblock %}

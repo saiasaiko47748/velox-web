@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}My Orders — VELOX{% endblock %}
+
+{% block extra_head %}
+<style>
+.orders-page { padding-top: 72px; min-height: 100vh; background: var(--bg); }
+.orders-hero {
+  background: linear-gradient(135deg, #111111, #1A1A1A);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 0 32px;
+}
+.welcome-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold); border-radius: 999px;
+  padding: 6px 16px; font-size: 13px; font-weight: 600;
+  margin-bottom: 16px;
+}
+.orders-grid { padding: 48px 0; }
+.order-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px; margin-bottom: 20px;
+  transition: border-color .3s;
+}
+.order-card:hover { border-color: var(--gold); }
+.order-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.order-ref { font-family: monospace; font-size: 18px; color: var(--gold); font-weight: 700; }
+.order-date { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.status-pill {
+  border-radius: 999px; padding: 5px 14px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+}
+.status-confirmed { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: #818cf8; }
+.status-en_route  { background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3); color: var(--gold); }
+.status-in_progress { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; }
+.status-completed  { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; }
+.order-details { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 16px; margin-bottom: 20px; }
+.order-detail-item { }
+.od-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.od-val { color: var(--text); font-size: 14px; font-weight: 500; }
+.order-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.track-order-btn {
+  background: var(--gold); color: #0A0A0A;
+  border: none; border-radius: 10px; padding: 10px 20px;
+  font-weight: 700; font-size: 13px; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  transition: all .3s;
+}
+.track-order-btn:hover { background: var(--gold-light); }
+.view-details-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 10px; padding: 10px 20px;
+  font-size: 13px; cursor: pointer; transition: all .3s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.view-details-btn:hover { border-color: var(--gold); color: var(--gold); }
+.empty-state { text-align: center; padding: 80px 0; }
+.empty-icon { font-size: 64px; color: var(--border); margin-bottom: 20px; }
+.empty-state h3 { color: var(--text); font-size: 22px; margin-bottom: 10px; }
+.empty-state p { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+.pro-name-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2);
+  color: #22c55e; font-size: 12px; padding: 3px 10px; border-radius: 999px; margin-top: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-page">
+  <div class="orders-hero">
+    <div class="container">
+      <div class="welcome-chip"><i class="fa-solid fa-user"></i> {{ customer.name or customer.phone }}</div>
+      <h1 class="section-title" style="font-size:38px;">My <span class="text-gold">Orders</span></h1>
+      <p style="color:var(--muted);font-size:15px;">All your bookings in one place. Track live status in real-time.</p>
+    </div>
+  </div>
+
+  <div class="container orders-grid">
+    {% if orders %}
+      {% for order in orders %}
+      <div class="order-card">
+        <div class="order-top">
+          <div>
+            <div class="order-ref">{{ order.booking_ref }}</div>
+            <div class="order-date">{{ order.created[:16].replace('T',' ') }}</div>
+            {% if order.pro_name %}
+            <div class="pro-name-chip"><i class="fa-solid fa-circle-check"></i> Pro: {{ order.pro_name }}</div>
+            {% endif %}
+          </div>
+          <span class="status-pill status-{{ order.status|replace(' ','_') }}">
+            {% if order.status == 'confirmed' %}📋 Confirmed
+            {% elif order.status == 'en_route' %}🚗 En Route
+            {% elif order.status == 'in_progress' %}🔧 In Progress
+            {% elif order.status == 'completed' %}✅ Completed
+            {% else %}{{ order.status }}{% endif %}
+          </span>
+        </div>
+        <div class="order-details">
+          <div class="order-detail-item">
+            <div class="od-label">Service</div>
+            <div class="od-val">{{ order.service }}</div>
+          </div>
+          <div class="order-detail-item">
+            <div class="od-label">Scheduled</div>
+            <div class="od-val">{{ order.scheduled_dt or '—' }}</div>
+          </div>
+          <div class="order-detail-item">
+            <div class="od-label">Location</div>
+            <div class="od-val" style="font-size:12px;">{{ order.location[:40] + '…' if order.location|length > 40 else order.location }}</div>
+          </div>
+          <div class="order-detail-item">
+            <div class="od-label">Amount Paid</div>
+            <div class="od-val" style="color:var(--gold);font-weight:700;">₹{{ order.amount }}</div>
+          </div>
+        </div>
+        <div class="order-actions">
+          <a href="/track-order?ref={{ order.booking_ref }}" class="track-order-btn">
+            <i class="fa-solid fa-location-dot"></i> Track Live
+          </a>
+          <a href="#" class="view-details-btn" onclick="showOrderDetails('{{ order.booking_ref }}', '{{ order.payment_id }}')">
+            <i class="fa-solid fa-receipt"></i> Payment ID
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <h3>No orders yet</h3>
+        <p>You haven't booked any services. Let's change that!</p>
+        <a href="/book" class="btn-gold">Book a Service <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Payment detail modal -->
+<div class="modal-overlay" id="detailModal" onclick="this.classList.remove('show')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 style="margin-bottom:12px;">Payment Details</h2>
+    <p style="color:var(--muted);font-size:14px;">Booking Reference</p>
+    <div class="modal-payment-id" id="modalRef" style="font-size:18px;margin:8px 0;"></div>
+    <p style="color:var(--muted);font-size:14px;margin-top:12px;">Payment ID</p>
+    <div class="modal-payment-id" id="modalPay" style="font-size:13px;margin:8px 0;word-break:break-all;"></div>
+    <button class="btn-gold" style="margin-top:20px;" onclick="document.getElementById('detailModal').classList.remove('show')">Close</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showOrderDetails(ref, payId) {
+  document.getElementById('modalRef').textContent = ref;
+  document.getElementById('modalPay').textContent = payId || 'N/A';
+  document.getElementById('detailModal').classList.add('show');
+}
+</script>
+{% endblock %}
